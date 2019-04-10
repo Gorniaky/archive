@@ -11,5 +11,4 @@ explorer "http://MSGuides.com"&goto halt
 :notsupported
 echo.&echo ============================================================================&echo Sorry! Your version is not supported.&echo Please try installing the latest version here: bit.ly/downloadmsp
 :halt
-echo https://get.msguides.com/office2016.txt
 pause >nul
