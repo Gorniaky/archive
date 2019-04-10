@@ -12,9 +12,9 @@ if %i%==3 set KMS_Sev=kms9.msguides.com
 if %i%==4 goto notsupported
 cscript //nologo slmgr.vbs /skms %KMS_Sev% >nul&echo ============================================================================&echo.&echo.
 cscript //nologo slmgr.vbs /ato
-if %errorlevel% EQU 0 (echo.&echo ============================================================================&echo.&echo #My official blog: megabrdos.blosgpot.com&echo.&echo #How it works: bit.ly/kms-server&echo.&echo #Please feel free to contact me at hwss.s2@gmail.com if you have any questions or concerns.&echo.&echo #Please consider supporting this project: bit.ly/donatehwsss2&echo #Your support is helping me keep my servers running everyday!&echo.&echo ============================================================================&choice /n /c YN /m "Would you like to visit my blog [Y,N]?" & if errorlevel 2 exit) else (echo The connection to my KMS server failed! Trying to connect to another one... & echo Please wait... & echo. & echo. & set /a i+=1 & goto server)
+if %errorlevel% EQU 0 (cscript //nologo slmgr.vbs /ckms >nul&echo.&echo ============================================================================&echo.&echo #My official blog: megabrdos.blosgpot.com&echo.&echo #How it works: bit.ly/kms-server&echo.&echo #Please feel free to contact me at hwss.s2@gmail.com if you have any questions or concerns.&echo.&echo #Please consider supporting this project: bit.ly/donatehwsss2&echo #Your support is helping me keep my servers running everyday!&echo.&echo ============================================================================&choice /n /c YN /m "Would you like to visit my blog [Y,N]?" & if errorlevel 2 exit) else (echo The connection to my KMS server failed! Trying to connect to another one... & echo Please wait... & echo. & echo. & set /a i+=1 & goto server)
 explorer "https://megabrdos.blogspot.com"&goto halt
 :notsupported
-echo ============================================================================&echo.&echo Sorry! Your version is not supported.&echo.&cscript //nologo slmgr.vbs /ckms >nul
+cscript //nologo slmgr.vbs /ckms >nul&echo ============================================================================&echo.&echo Sorry! Your version is not supported.&echo.&cscript //nologo slmgr.vbs /ckms >nul
 :halt
 pause >nul
