@@ -1,5 +1,5 @@
 @echo off
-if exist "%programfiles(x86)%\WinRAR\" (cd "%programfiles(x86)%\WinRAR\") else if exist "%programfiles%\WinRAR\" (cd "%programfiles%\WinRAR\") else goto notsupported
+if exist "%programfiles(x86)%\WinRAR\WinRAR.exe" (cd "%programfiles(x86)%\WinRAR\") else if exist "%programfiles%\WinRAR\WinRAR.exe" (cd "%programfiles%\WinRAR\") else goto notsupported
 echo> "rarreg.key" RAR registration data
 echo>> "rarreg.key" chattchitto.com
 echo>> "rarreg.key" Unlimited Company License
