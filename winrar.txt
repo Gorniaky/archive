@@ -1,5 +1,14 @@
 @echo off
-if exist "%programfiles(x86)%\WinRAR\WinRAR.exe" (cd "%programfiles(x86)%\WinRAR\") else if exist "%programfiles%\WinRAR\WinRAR.exe" (cd "%programfiles%\WinRAR\") else goto notsupported
+>nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto gotAdmin)
+:UACPrompt
+echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
+echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
+"%temp%\getadmin.vbs"
+if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
+exit /B
+:gotAdmin
+CD /D "%~dp0"
 echo> "rarreg.key" RAR registration data
 echo>> "rarreg.key" chattchitto.com
 echo>> "rarreg.key" Unlimited Company License
@@ -11,7 +20,10 @@ echo>> "rarreg.key" b41bcf56929486b8bcdac33d50ecf7739960e36503ffdcbcf7dbfc
 echo>> "rarreg.key" 378eb1e8a5d96ddf9e5c7d6e7b122c103ee81bce156ee5ec1cf50d
 echo>> "rarreg.key" 174c5a231523f967f5c53a4efdc7ecb9689f18a2ed6166f7608276
 echo>> "rarreg.key" 7f5dd734a2736b2d5fb6eb5145b50ed0c7033251fe142027056408
+if exist "%programfiles(x86)%\WinRAR\WinRAR.exe" (move /y "rarreg.key" "%programfiles(x86)%\WinRAR\") else if exist "%programfiles%\WinRAR\WinRAR.exe" (move /y "rarreg.key" "%programfiles%\WinRAR\") else goto notsupported
 goto :halt
 :notsupported
-echo Sorry! Your version is not supported.&pause>nul
+echo Sorry! Your version is not supported.
+echo Copy the rarreg.key file in this folder to WinRAR installation folder.
+pause
 :halt
