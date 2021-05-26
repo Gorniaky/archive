@@ -1,0 +1,8 @@
+@echo off
+del /f /s /q %temp%\*.*
+del /f /s /q %windir%\temp\*.*
+del /f /s /q %windir%\prefetch\*.*
+del /f /s /q %windir%\SoftwareDistribution\Download\*.*
+del /f /s /q %programdata%\temp\*.*
+del /f /s /q %systemdrive%\$Recycle.Bin\*.*
+del /f /s /q %appdata%\Roaming\Adobe\Common\"Media Cache Files"\*.*
