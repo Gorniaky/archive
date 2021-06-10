@@ -5,4 +5,5 @@ del /f /s /q %windir%\prefetch\*.*
 del /f /s /q %windir%\SoftwareDistribution\Download\*.*
 del /f /s /q %programdata%\temp\*.*
 del /f /s /q %systemdrive%\$Recycle.Bin\*.*
-del /f /s /q %appdata%\Roaming\Adobe\Common\"Media Cache Files"\*.*
+del /f /s /q %appdata%\Adobe\Common\"Media Cache Files"\*.*
+del /f /s /q %homepath%\appdata\Local\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\TempState\WinGet
