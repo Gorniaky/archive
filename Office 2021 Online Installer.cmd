@@ -5,12 +5,12 @@ title Installing Office 2021
 if exist setup.exe (goto checkhashsetup) else (goto makesetup)
 
 :checkhashsetup
-certutil -hashfile setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447
-if %errorlevel%==0 (cls&goto setup) else (cls&goto noauthenticsetup)
+certutil -hashfile setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul
+if '%errorlevel%' EQU '0' (cls&goto setup) else (cls&goto noauthenticsetup)
 
 :setup
-if exist "%programfiles% (x86)" (set xar=) else (set xar=32)
-if exist "config%xar%.xml" (goto resumesetup) else (goto noconfig)
+if not defined programfiles(x86) (set xar=32&set xar32=32) else (set xar=64)
+if exist "config%xar32%.xml" (goto resumesetup) else (goto noconfig)
 
 :resumesetup
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
@@ -23,8 +23,8 @@ if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit /B
 :gotAdmin
 
-(if exist "%ProgramFiles%\Microsoft Office\Office16\ospp.vbs" goto installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office\Office16\ospp.vbs" goto installed)
-setup.exe /configure config%xar%.xml
+(if exist "%ProgramFiles%\Microsoft Office" goto installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office" goto installed)
+setup.exe /configure config%xar32%.xml
 
 :installed
 echo Office already installed.
@@ -47,16 +47,17 @@ pause >nul
 exit
 
 :noconfig
-echo ^<Configuration^>> "config%xar%.xml"
-if '%xar%' EQU '32' (echo   ^<Add Channel^="PerpetualVL2021" AllowCdnFallback^="True"^>>> "config%xar%.xml") else (echo   ^<Add OfficeClientEdition^="64" Channel^="PerpetualVL2021" AllowCdnFallback^="True"^>>> "config%xar%.xml")
-echo      ^<Product ID^="ProPlus2021Volume"^>>> "config%xar%.xml"
-echo          ^<Language ID^="MatchOS" /^>>> "config%xar%.xml"
-echo          ^<ExcludeApp ID^="Teams" /^>>> "config%xar%.xml"
-echo      ^</Product^>>> "config%xar%.xml"
-echo   ^</Add^>>> "config%xar%.xml"
-echo   ^<RemoveMSI /^>>> "config%xar%.xml"
-echo   ^<Display AcceptEULA^="TRUE" /^>>> "config%xar%.xml"
-echo ^</Configuration^>>> "config%xar%.xml"
+if '%xar%' EQU '64' (set oce= OfficeClientEdition="64")
+echo ^<Configuration^>> "config%xar32%.xml"
+echo   ^<Add%oce% Channel^="PerpetualVL2021" AllowCdnFallback^="True"^>>> "config%xar32%.xml"
+echo      ^<Product ID^="ProPlus2021Volume"^>>> "config%xar32%.xml"
+echo          ^<Language ID^="MatchOS" /^>>> "config%xar32%.xml"
+echo          ^<ExcludeApp ID^="Teams" /^>>> "config%xar32%.xml"
+echo      ^</Product^>>> "config%xar32%.xml"
+echo   ^</Add^>>> "config%xar32%.xml"
+echo   ^<RemoveMSI /^>>> "config%xar32%.xml"
+echo   ^<Display AcceptEULA^="TRUE" /^>>> "config%xar32%.xml"
+echo ^</Configuration^>>> "config%xar32%.xml"
 goto start
 
 :setupend
