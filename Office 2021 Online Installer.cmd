@@ -113,7 +113,7 @@ cls
 echo.
 echo ============================================================
 echo.
-echo Building x%xar% config file.
+echo Rebuilding the configuration file for x86.
 echo.
 echo ============================================================
 echo.
@@ -126,7 +126,7 @@ cls
 echo.
 echo ============================================================
 echo.
-echo ERROR === Powershell not work === ERROR
+echo ERROR === Powershell does not work === ERROR
 echo.
 echo ============================================================
 echo.
