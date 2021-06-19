@@ -13,12 +13,13 @@ if '%errorlevel%' EQU '0' (goto config) else (goto noauthenticsetup)
 
 :config
 if not defined configpath (set configpath=.)
-if not defined programfiles(x86) (set xar=86&set xar32=32) else (set xar=64)
-if exist "%configpath%\config.xml" (goto getAdmin) else (if exist "%temp%\config.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
+if not defined programfiles(x86) (set xar=86) else (set xar=64)
+if exist "%configpath%\config.xml" (if %xar% EQU 86 (goto configx86) else (goto getAdmin)) else (if exist "%temp%\config.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
 
 :getAdmin
 >nul 2>nul reg query HKU\S-1-5-19
 if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto gotAdmin)
+
 :UACPrompt
 (echo Set UAC = CreateObject^("Shell.Application"^)
 echo UAC.ShellExecute "%~s0", "", "", "runas", 1)> "%temp%\getadmin.vbs"
@@ -27,7 +28,6 @@ if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit /B
 
 :gotAdmin
-
 (if exist "%ProgramFiles%\Microsoft Office" goto installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office" goto installed)
 cls
 echo.
@@ -89,7 +89,7 @@ cls
 echo.
 echo ============================================================
 echo.
-echo Building config file.
+echo Building x%xar% config file.
 echo.
 echo ============================================================
 echo.
@@ -107,6 +107,29 @@ echo ^</Configuration^>)> "%temp%\config.xml"
 set configpath=%temp%
 timeout /t 2>nul
 goto start
+
+:configx86
+cls
+echo.
+echo ============================================================
+echo.
+echo Building x%xar% config file.
+echo.
+echo ============================================================
+echo.
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt"
+if '%errorlevel%' EQU '0' (move /y "%configpath%\config.txt" "%configpath%\config.xml">nul)
+goto getAdmin
+
+:nopowershell
+cls
+echo.
+echo ============================================================
+echo.
+echo ERROR === Powershell not work === ERROR
+echo.
+echo ============================================================
+echo.
 
 :setupend
 echo:
@@ -139,6 +162,7 @@ echo.
 echo ============================================================
 echo.
 set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul
+if '%errorlevel%' NEQ '0' (goto nopowershell)
 move /y setup.exe "%temp%"
 set setuppath=%temp%
 timeout /t 2>nul
