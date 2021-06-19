@@ -2,35 +2,66 @@
 :start
 CD /D "%~dp0"
 title Installing Office 2021
-if exist setup.exe (goto checkhashsetup) else (goto makesetup)
+cls
+if not defined setuppath (set setuppath=.)
+if exist %setuppath%\setup.exe (goto checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&goto checkhashsetup) else (goto makesetup))
 
 :checkhashsetup
-certutil -hashfile setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul
-if '%errorlevel%' EQU '0' (cls&goto setup) else (cls&goto noauthenticsetup)
+if %setuppath%==. (goto config)
+certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul
+if '%errorlevel%' EQU '0' (goto config) else (goto noauthenticsetup)
 
-:setup
-if not defined programfiles(x86) (set xar=32&set xar32=32) else (set xar=64)
-if exist "config%xar32%.xml" (goto resumesetup) else (goto noconfig)
+:config
+if not defined configpath (set configpath=.)
+if not defined programfiles(x86) (set xar=86&set xar32=32) else (set xar=64)
+if exist "%configpath%\config%xar32%.xml" (goto getAdmin) else (if exist "%temp%\config%xar32%.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
 
-:resumesetup
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+:getAdmin
+>nul 2>nul reg query HKU\S-1-5-19
 if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto gotAdmin)
 :UACPrompt
-echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
+(echo Set UAC = CreateObject^("Shell.Application"^)
+echo UAC.ShellExecute "%~s0", "", "", "runas", 1)> "%temp%\getadmin.vbs"
 "%temp%\getadmin.vbs"
 if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit /B
+
 :gotAdmin
 
 (if exist "%ProgramFiles%\Microsoft Office" goto installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office" goto installed)
-setup.exe /configure config%xar32%.xml
+cls
+echo.
+echo ============================================================
+echo.
+echo Installing Office 2021.
+echo.
+echo ============================================================
+echo.
+%setuppath%\setup.exe /configure %configpath%\config%xar32%.xml
 
 :installed
+cls
+echo.
+echo ============================================================
+echo.
 echo Office already installed.
+echo.
+echo ============================================================
+echo.
+del /f /q "%temp%\setup.exe"
+del /f /q "%temp%\config.xml"
+timeout /t 2>nul
 
 :activate
-title Activating Office 2021
+title Activating Office
+cls
+echo.
+echo ============================================================
+echo.
+echo Activating Office 2021
+echo.
+echo ============================================================
+echo.
 (if exist "%ProgramFiles%\Microsoft Office\Office16\ospp.vbs" cd /d "%ProgramFiles%\Microsoft Office\Office16")&(if exist "%ProgramFiles(x86)%\Microsoft Office\Office16\ospp.vbs" cd /d "%ProgramFiles(x86)%\Microsoft Office\Office16")&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&echo Activating your Office...&cscript //nologo slmgr.vbs /ckms >nul&cscript //nologo ospp.vbs /setprt:1688 >nul&cscript //nologo ospp.vbs /unpkey:PDPVF >nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF >nul&set i=1
 :server
 if %i%==1 set K_S=kms7.MSGuides.com
@@ -38,50 +69,80 @@ if %i%==2 set K_S=kms8.MSGuides.com
 if %i%==3 set K_S=kms9.MSGuides.com
 if %i%==4 set K_S=kms.loli.beer
 if %i%==5 goto notsupported
-cscript //nologo ospp.vbs /sethst:%K_S% >nul&echo ============================================================================&echo.&echo.
-cscript //nologo ospp.vbs /act | find /i "successful" && (echo.&echo ============================================================================&echo.&echo #How it works: bit.ly/kms-server&goto halt) || (echo The connection to my KMS server failed! Trying to connect to another one... & echo Please wait... & echo. & echo. & set /a i+=1 & goto server)
+cscript //nologo ospp.vbs /sethst:%K_S% >nul
+echo ============================================================
+echo.
+echo.
+cscript //nologo ospp.vbs /act | find /i "successful" && (echo.&echo ============================================================&echo.&echo #How it works: bit.ly/kms-server&echo ============================================================&goto halt) || (echo The connection to KMS server failed! Trying to connect to another one... &echo Please wait... &echo. &echo. &set /a i+=1 &goto server)
 :notsupported
-echo.&echo ============================================================================&echo Sorry! Your version is not supported.&echo Please try installing the latest version here: bit.ly/aiomsp
+echo.
+echo ============================================================
+echo Sorry! Your version is not supported.
+echo Please try installing the latest version here: bit.ly/aiomsp
+echo ============================================================
 :halt
 pause >nul
 exit
 
 :noconfig
+cls
+echo.
+echo ============================================================
+echo.
+echo Building config file.
+echo.
+echo ============================================================
+echo.
 if '%xar%' EQU '64' (set oce= OfficeClientEdition="64")
-echo ^<Configuration^>> "config%xar32%.xml"
-echo   ^<Add%oce% Channel^="PerpetualVL2021" AllowCdnFallback^="True"^>>> "config%xar32%.xml"
-echo      ^<Product ID^="ProPlus2021Volume"^>>> "config%xar32%.xml"
-echo          ^<Language ID^="MatchOS" /^>>> "config%xar32%.xml"
-echo          ^<ExcludeApp ID^="Teams" /^>>> "config%xar32%.xml"
-echo      ^</Product^>>> "config%xar32%.xml"
-echo   ^</Add^>>> "config%xar32%.xml"
-echo   ^<RemoveMSI /^>>> "config%xar32%.xml"
-echo   ^<Display AcceptEULA^="TRUE" /^>>> "config%xar32%.xml"
-echo ^</Configuration^>>> "config%xar32%.xml"
+(echo ^<Configuration^>
+echo   ^<Add%oce% Channel^="PerpetualVL2021" AllowCdnFallback^="True"^>
+echo      ^<Product ID^="ProPlus2021Volume"^>
+echo          ^<Language ID^="MatchOS" /^>
+echo          ^<ExcludeApp ID^="Teams" /^>
+echo      ^</Product^>
+echo   ^</Add^>
+echo   ^<RemoveMSI /^>
+echo   ^<Display AcceptEULA^="TRUE" /^>
+echo ^</Configuration^>)> "%temp%\config%xar32%.xml"
+set configpath=%temp%
+timeout /t 2>nul
 goto start
 
 :setupend
 echo:
 echo Press any key to exit...
-pause >nul
+pause>nul
 exit
 
 :noauthenticsetup
+cls
+echo.
+echo ============================================================
+echo.
 echo The file "setup.exe" is not authentic.
-del /f /q setup.exe
+echo.
+echo ============================================================
+echo.
+del /f /q "%temp%\setup.exe"
+timeout /t 2>nul
 goto makesetup
 
 setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447
 
 :makesetup
-for %%i in (powershell.exe) do if "%%~$path:i"=="" (
-echo: &echo ==== ERROR ==== &echo:
-echo Powershell is not installed in the system.
-echo Aborting...
-goto setupend
-)
-
+cls
+echo.
+echo ============================================================
+echo.
+echo Building an authentic "setup.exe"
+echo.
+echo ============================================================
+echo.
 set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul
+move /y setup.exe "%temp%"
+set setuppath=%temp%
+timeout /t 2>nul
+cls
 goto start
 
 :bat2file: Compressed2TXT v6.1
@@ -3172,4 +3233,4 @@ n=0;}} if (p>0) {for (int i=0;i<5-p;i++) {n += 84 * p85[p+i];} q=4; while (q > p
 ::77$~&DT69a,T=]JMc]h0F1w.(Abtf&F^iLN1Wm@)U7hXSrz2Kjhe1kVz(/Nm9SYd$D=3vqjB7g?5gfa1D{d?|Ok$^V7j1KZNPgX7=P1xt6ku){U((cp8GID5bz8D|-Rg++9)A1h+|S$Lkq!Xi--^dZR)81YeJRM{lr,LCF_y.lffssjwir{TH7$71u;-95S{?&[zsN1.1btH6VeKc0n@5|V7rEsb{WJu.7];aLOZEX|PwOVfT@+shC?fCB|qKg9az~S4u[;#2ljU-J,04GCre#A.n6)2Jg;^BSH=@#}UTI6n#~Q.JOkVJ&G+$^BN/SOzmOX(zxp|69du_kqgi/[S|AftE|c4d7NuIMRWtfzO2fJm~,P;=Aoc-x6ds[fi_Jn=Zs^Ab.Eq.IqR87mDb/s$f=ndH,5O6Q#}]8|ZQ=BqT6xvE8kR4ag6.~)@Cp|Q]A@|=s.7v5zj)0E89a)!v^}f,IxWivF.p&-L_((qWd|{mXf/MsHX9VZQZCGw)0esqq(=cFxX4xSm)2iIsq!b@ZUg8]ZRwT-Y]n7Yz}VYtMcLJOkZ.Lvv(pY8Cq?q=5rs]LMIt4R=9lK8YC^+!iS+g5!^Qe_86oe;.m{vU4fnrLJz+q8VBLAtvX{A(vtF/EO4@7A+n=sL(+3Sg=/DrM((loaIsqLP(@,}o;N,=-kPPnxGff@fhja|DHei7}AscO25e}y-0Tb(;$R$dxd9KaOGlH=M]}jAUi4T]Qlt.]jZdab{di-1![Es[SXlCh(^eE[}jFf@[M8e&c0RtMFUi4-A#-j@S[BpFQ,[U1B^dgntie#C]~|Cz^D/DxthN3$MQ2}ejNmo4xpN7M_3S{jbaDN^J[9CZQpOJ[0y]WMrZnI[heZd4!5xH^M(?M8^uDHMPJf+]/kM5Cb@NPnlQ3/igB5b$Oqrl6OIgVU-zIK,Ay0[hpQeLKa7^9gz^3Z3
 :bat2file:]
 find "setup" setup.exe
-goto setupend
+goto configend
