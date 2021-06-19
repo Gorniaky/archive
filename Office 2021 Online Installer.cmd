@@ -14,7 +14,7 @@ if '%errorlevel%' EQU '0' (goto config) else (goto noauthenticsetup)
 :config
 if not defined configpath (set configpath=.)
 if not defined programfiles(x86) (set xar=86&set xar32=32) else (set xar=64)
-if exist "%configpath%\config%xar32%.xml" (goto getAdmin) else (if exist "%temp%\config%xar32%.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
+if exist "%configpath%\config.xml" (goto getAdmin) else (if exist "%temp%\config.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
 
 :getAdmin
 >nul 2>nul reg query HKU\S-1-5-19
@@ -37,7 +37,7 @@ echo Installing Office 2021.
 echo.
 echo ============================================================
 echo.
-%setuppath%\setup.exe /configure %configpath%\config%xar32%.xml
+%setuppath%\setup.exe /configure %configpath%\config.xml
 
 :installed
 cls
@@ -103,7 +103,7 @@ echo      ^</Product^>
 echo   ^</Add^>
 echo   ^<RemoveMSI /^>
 echo   ^<Display AcceptEULA^="TRUE" /^>
-echo ^</Configuration^>)> "%temp%\config%xar32%.xml"
+echo ^</Configuration^>)> "%temp%\config.xml"
 set configpath=%temp%
 timeout /t 2>nul
 goto start
