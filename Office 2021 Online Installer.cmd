@@ -1,4 +1,8 @@
 @echo off
+goto start
+
+setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447 VirusTotal 0/69 2021-06-06 08:26:46 UTC
+
 :start
 CD /D "%~dp0"
 cls
@@ -171,8 +175,6 @@ del /f /q "%temp%\setup.exe"
 timeout /t 2>nul
 cls
 goto makesetup
-
-setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447
 
 :makesetup
 cls
