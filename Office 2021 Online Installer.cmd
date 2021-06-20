@@ -2,7 +2,7 @@
 :start
 CD /D "%~dp0"
 cls
-title Installing Office 2021
+title Office 2021 Online Installer
 if not defined setuppath (set setuppath=.)
 if exist %setuppath%\setup.exe (goto checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&goto checkhashsetup) else (goto makesetup))
 
@@ -54,7 +54,6 @@ timeout /t 2>nul
 cls
 
 :activate
-title Activating Office
 cls
 echo.
 echo ============================================================
