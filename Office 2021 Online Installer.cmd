@@ -8,17 +8,16 @@ if exist %setuppath%\setup.exe (goto checkhashsetup) else (if exist %temp%\setup
 
 :checkhashsetup
 if %setuppath%==. (goto config)
-certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul
-if '%errorlevel%' EQU '0' (goto config) else (goto noauthenticsetup)
+certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && goto config || goto noauthenticsetup
 
 :config
 if not defined configpath (set configpath=.)
-if not defined programfiles(x86) (set xar=86&set xar2=64) else (set xar=64&set xar2=32)
-if exist "%configpath%\config.xml" (if %xar% EQU 86 (goto configx86) else (goto configx64)) else (if exist "%temp%\config.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
+if not defined programfiles(x86) (set xar=86) else (set xar=64)
+if exist "%configpath%\config.xml" (goto configx%xar%) else (if exist "%temp%\config.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
 
 :getAdmin
->nul 2>nul reg query HKU\S-1-5-19
-if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto gotAdmin)
+cls
+>nul 2>nul reg query HKU\S-1-5-19 && goto gotAdmin || goto UACPrompt
 
 :UACPrompt
 (echo Set UAC = CreateObject^("Shell.Application"^)
@@ -64,7 +63,7 @@ echo Activating Office 2021
 echo.
 echo ============================================================
 echo.
-(if exist "%ProgramFiles%\Microsoft Office\Office16\ospp.vbs" cd /d "%ProgramFiles%\Microsoft Office\Office16")&(if exist "%ProgramFiles(x86)%\Microsoft Office\Office16\ospp.vbs" cd /d "%ProgramFiles(x86)%\Microsoft Office\Office16")&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&echo Activating your Office...&cscript //nologo slmgr.vbs /ckms >nul&cscript //nologo ospp.vbs /setprt:1688 >nul&cscript //nologo ospp.vbs /unpkey:PDPVF >nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF >nul&set i=1
+(if exist "%ProgramFiles%\Microsoft Office\Office16\ospp.vbs" cd /d "%ProgramFiles%\Microsoft Office\Office16")&(if exist "%ProgramFiles(x86)%\Microsoft Office\Office16\ospp.vbs" cd /d "%ProgramFiles(x86)%\Microsoft Office\Office16")&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&echo Activating your Office...&echo.&cscript //nologo slmgr.vbs /ckms >nul&cscript //nologo ospp.vbs /setprt:1688 >nul&cscript //nologo ospp.vbs /unpkey:PDPVF >nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF >nul&set i=1
 :server
 if %i%==1 set K_S=kms7.MSGuides.com
 if %i%==2 set K_S=kms8.MSGuides.com
@@ -120,18 +119,14 @@ echo Rebuilding the configuration file for x%xar%.
 echo.
 echo ============================================================
 echo.
-PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=\"%xar%\"') | findstr /i "OfficeClientEdition"
-if '%errorlevel%' EQU '0' (goto getAdmin) else (goto configx642)
-:configx642
-PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=') | findstr /i "OfficeClientEdition"
-if '%errorlevel%' EQU '0' (goto configx643) else (goto configx644)
-:configx643
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('OfficeClientEdition=\"%xar2%\"','OfficeClientEdition=\"%xar%\"') > "%configpath%\config.txt"
-if '%errorlevel%' EQU '0' (move /y "%configpath%\config.txt" "%configpath%\config.xml">nul)
+if '%xar%' EQU '64' (set xar2=32) else (set xar2=64)
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=\"%xar%\"') | findstr /i "%xar%">nul && goto getAdmin
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=') | findstr /i "OfficeClientEdition">nul && goto configx642
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('^<Add','^<Add OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
+cls
 goto getAdmin
-:configx644
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('^<Add','^<Add OfficeClientEdition=\"%xar%\"') > "%configpath%\config.txt"
-if '%errorlevel%' EQU '0' (move /y "%configpath%\config.txt" "%configpath%\config.xml">nul)
+:configx642
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('OfficeClientEdition=\"%xar2%\"','OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
 cls
 goto getAdmin
 
@@ -144,8 +139,7 @@ echo Rebuilding the configuration file for x%xar%.
 echo.
 echo ============================================================
 echo.
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt"
-if '%errorlevel%' EQU '0' (move /y "%configpath%\config.txt" "%configpath%\config.xml">nul)
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt" && move /y "%configpath%\config.txt" "%configpath%\config.xml">nul
 cls
 goto getAdmin
 
@@ -190,9 +184,7 @@ echo Building an authentic "setup.exe"
 echo.
 echo ============================================================
 echo.
-pushd %temp%
-set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul
-if '%errorlevel%' NEQ '0' (goto nopowershell)
+set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul && move /y "setup.exe" "%temp%\setup.exe">nul || goto nopowershell
 set setuppath=%temp%
 timeout /t 2>nul
 cls
