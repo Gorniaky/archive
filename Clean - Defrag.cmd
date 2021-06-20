@@ -1,9 +1,8 @@
 @echo off
->nul 2>nul reg query HKU\S-1-5-19
-if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto gotAdmin)
+>nul 2>nul reg query HKU\S-1-5-19 && goto gotAdmin || goto UACPrompt
 :UACPrompt
-echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
+(echo Set UAC = CreateObject^("Shell.Application"^)
+echo UAC.ShellExecute "%~s0", "", "", "runas", 1)> "%temp%\getadmin.vbs"
 "%temp%\getadmin.vbs"
 if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit /B
