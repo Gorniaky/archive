@@ -1,8 +1,8 @@
 @echo off
 :start
 CD /D "%~dp0"
-title Installing Office 2021
 cls
+title Installing Office 2021
 if not defined setuppath (set setuppath=.)
 if exist %setuppath%\setup.exe (goto checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&goto checkhashsetup) else (goto makesetup))
 
@@ -13,8 +13,8 @@ if '%errorlevel%' EQU '0' (goto config) else (goto noauthenticsetup)
 
 :config
 if not defined configpath (set configpath=.)
-if not defined programfiles(x86) (set xar=86) else (set xar=64)
-if exist "%configpath%\config.xml" (if %xar% EQU 86 (goto configx86) else (goto getAdmin)) else (if exist "%temp%\config.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
+if not defined programfiles(x86) (set xar=86&set xar2=64) else (set xar=64&set xar2=32)
+if exist "%configpath%\config.xml" (if %xar% EQU 86 (goto configx86) else (goto configx64)) else (if exist "%temp%\config.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
 
 :getAdmin
 >nul 2>nul reg query HKU\S-1-5-19
@@ -38,6 +38,7 @@ echo.
 echo ============================================================
 echo.
 %setuppath%\setup.exe /configure %configpath%\config.xml
+cls
 
 :installed
 cls
@@ -51,6 +52,7 @@ echo.
 del /f /q "%temp%\setup.exe"
 del /f /q "%temp%\config.xml"
 timeout /t 2>nul
+cls
 
 :activate
 title Activating Office
@@ -106,19 +108,45 @@ echo   ^<Display AcceptEULA^="TRUE" /^>
 echo ^</Configuration^>)> "%temp%\config.xml"
 set configpath=%temp%
 timeout /t 2>nul
+cls
 goto start
+
+:configx64
+cls
+echo.
+echo ============================================================
+echo.
+echo Rebuilding the configuration file for x%xar%.
+echo.
+echo ============================================================
+echo.
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=\"%xar%\"') | findstr /i "OfficeClientEdition"
+if '%errorlevel%' EQU '0' (goto getAdmin) else (goto configx642)
+:configx642
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=') | findstr /i "OfficeClientEdition"
+if '%errorlevel%' EQU '0' (goto configx643) else (goto configx644)
+:configx643
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('OfficeClientEdition=\"%xar2%\"','OfficeClientEdition=\"%xar%\"') > "%configpath%\config.txt"
+if '%errorlevel%' EQU '0' (move /y "%configpath%\config.txt" "%configpath%\config.xml">nul)
+goto getAdmin
+:configx644
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('^<Add','^<Add OfficeClientEdition=\"%xar%\"') > "%configpath%\config.txt"
+if '%errorlevel%' EQU '0' (move /y "%configpath%\config.txt" "%configpath%\config.xml">nul)
+cls
+goto getAdmin
 
 :configx86
 cls
 echo.
 echo ============================================================
 echo.
-echo Rebuilding the configuration file for x86.
+echo Rebuilding the configuration file for x%xar%.
 echo.
 echo ============================================================
 echo.
 PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt"
 if '%errorlevel%' EQU '0' (move /y "%configpath%\config.txt" "%configpath%\config.xml">nul)
+cls
 goto getAdmin
 
 :nopowershell
@@ -148,6 +176,7 @@ echo ============================================================
 echo.
 del /f /q "%temp%\setup.exe"
 timeout /t 2>nul
+cls
 goto makesetup
 
 setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447
@@ -161,9 +190,9 @@ echo Building an authentic "setup.exe"
 echo.
 echo ============================================================
 echo.
+pushd %temp%
 set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul
 if '%errorlevel%' NEQ '0' (goto nopowershell)
-move /y setup.exe "%temp%"
 set setuppath=%temp%
 timeout /t 2>nul
 cls
