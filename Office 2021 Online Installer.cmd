@@ -74,7 +74,8 @@ exit/b
 :============================================================
 
 :start
-
+cls
+CD /D "%~dp0"
 >nul 2>nul reg query HKU\S-1-5-19 && goto :gotAdmin || goto :UACPrompt
 
 :UACPrompt
@@ -85,8 +86,6 @@ if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit/b
 
 :gotAdmin
-CD /D "%~dp0"
-cls
 title Office 2021 Online Installer
 (if exist "%ProgramFiles%\Microsoft Office" goto :installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office" goto :installed)
 
