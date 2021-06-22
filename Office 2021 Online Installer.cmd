@@ -1,37 +1,104 @@
 @echo off
-goto start
+goto :start
+
+:============================================================
 
 setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447 VirusTotal 0/69 2021-06-06 08:26:46 UTC
 
-:start
-CD /D "%~dp0"
-cls
-title Office 2021 Online Installer
-if not defined setuppath (set setuppath=.)
-if exist %setuppath%\setup.exe (goto checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&goto checkhashsetup) else (goto makesetup))
+:============================================================
 
 :checkhashsetup
-if %setuppath%==. (goto config)
-certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && goto config || goto noauthenticsetup
+if %setuppath%==. (exit/b)
+certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && exit/b || call :noauthenticsetup&exit/b
 
-:config
-if not defined configpath (set configpath=.)
-if not defined programfiles(x86) (set xar=86) else (set xar=64)
-if exist "%configpath%\config.xml" (goto configx%xar%) else (if exist "%temp%\config.xml" (set configpath=%temp%&goto getAdmin) else (goto noconfig))
+:============================================================
 
-:getAdmin
+:noconfig
 cls
->nul 2>nul reg query HKU\S-1-5-19 && goto gotAdmin || goto UACPrompt
+echo.
+echo ============================================================
+echo.
+echo Building x%xar% config file.
+echo.
+echo ============================================================
+echo.
+if '%xar%' EQU '64' (set oce= OfficeClientEdition="64")
+(echo ^<Configuration^>
+echo   ^<Add%oce% Channel^="PerpetualVL2021" AllowCdnFallback^="True"^>
+echo      ^<Product ID^="ProPlus2021Volume"^>
+echo          ^<Language ID^="MatchOS" /^>
+echo          ^<ExcludeApp ID^="Teams" /^>
+echo      ^</Product^>
+echo   ^</Add^>
+echo   ^<RemoveMSI /^>
+echo   ^<Display AcceptEULA^="TRUE" /^>
+echo ^</Configuration^>)> "%temp%\config.xml"
+set configpath=%temp%
+timeout /t 2>nul
+cls
+exit/b
+
+:configx64
+cls
+echo.
+echo ============================================================
+echo.
+echo Rebuilding the configuration file for x%xar%.
+echo.
+echo ============================================================
+echo.
+if '%xar%' EQU '64' (set xar2=32) else (set xar2=64)
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=\"%xar%\"') | findstr /i "%xar%">nul && exit/b
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=') | findstr /i "OfficeClientEdition">nul && goto :configx642
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('^<Add','^<Add OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
+cls
+exit/b
+:configx642
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('OfficeClientEdition=\"%xar2%\"','OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
+cls
+exit/b
+
+:configx86
+cls
+echo.
+echo ============================================================
+echo.
+echo Rebuilding the configuration file for x%xar%.
+echo.
+echo ============================================================
+echo.
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt" && move /y "%configpath%\config.txt" "%configpath%\config.xml">nul
+cls
+exit/b
+
+:============================================================
+
+:start
+
+>nul 2>nul reg query HKU\S-1-5-19 && goto :gotAdmin || goto :UACPrompt
 
 :UACPrompt
 (echo Set UAC = CreateObject^("Shell.Application"^)
 echo UAC.ShellExecute "%~s0", "", "", "runas", 1)> "%temp%\getadmin.vbs"
 "%temp%\getadmin.vbs"
 if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
-exit /B
+exit/b
 
 :gotAdmin
-(if exist "%ProgramFiles%\Microsoft Office" goto installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office" goto installed)
+CD /D "%~dp0"
+cls
+title Office 2021 Online Installer
+(if exist "%ProgramFiles%\Microsoft Office" goto :installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office" goto :installed)
+
+:config
+if not defined configpath (set configpath=.)
+if exist "%configpath%\config.xml" (call :configx%xar%) else (if exist "%temp%\config.xml" (set configpath=%temp%) else (call :noconfig))
+
+:setup
+if not defined programfiles(x86) (set xar=86) else (set xar=64)
+if not defined setuppath (set setuppath=.)
+if exist "%setuppath%\setup.exe" (call :checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&call :checkhashsetup) else (call :makesetup))
+
 cls
 echo.
 echo ============================================================
@@ -72,12 +139,12 @@ if %i%==1 set K_S=kms7.MSGuides.com
 if %i%==2 set K_S=kms8.MSGuides.com
 if %i%==3 set K_S=kms9.MSGuides.com
 if %i%==4 set K_S=kms.loli.beer
-if %i%==5 goto notsupported
+if %i%==5 goto :notsupported
 cscript //nologo ospp.vbs /sethst:%K_S% >nul
 echo ============================================================
 echo.
 echo.
-cscript //nologo ospp.vbs /act | find /i "successful" && (echo.&echo ============================================================&echo.&echo #How it works: bit.ly/kms-server&echo ============================================================&goto halt) || (echo The connection to KMS server failed! Trying to connect to another one... &echo Please wait... &echo. &echo. &set /a i+=1 &goto server)
+cscript //nologo ospp.vbs /act | find /i "successful" && (echo.&echo ============================================================&echo.&echo #How it works: bit.ly/kms-server&echo ============================================================&goto :halt) || (echo The connection to KMS server failed! Trying to connect to another one... &echo Please wait... &echo. &echo. &set /a i+=1 &goto :server)
 :notsupported
 echo.
 echo ============================================================
@@ -87,64 +154,6 @@ echo ============================================================
 :halt
 pause >nul
 exit
-
-:noconfig
-cls
-echo.
-echo ============================================================
-echo.
-echo Building x%xar% config file.
-echo.
-echo ============================================================
-echo.
-if '%xar%' EQU '64' (set oce= OfficeClientEdition="64")
-(echo ^<Configuration^>
-echo   ^<Add%oce% Channel^="PerpetualVL2021" AllowCdnFallback^="True"^>
-echo      ^<Product ID^="ProPlus2021Volume"^>
-echo          ^<Language ID^="MatchOS" /^>
-echo          ^<ExcludeApp ID^="Teams" /^>
-echo      ^</Product^>
-echo   ^</Add^>
-echo   ^<RemoveMSI /^>
-echo   ^<Display AcceptEULA^="TRUE" /^>
-echo ^</Configuration^>)> "%temp%\config.xml"
-set configpath=%temp%
-timeout /t 2>nul
-cls
-goto start
-
-:configx64
-cls
-echo.
-echo ============================================================
-echo.
-echo Rebuilding the configuration file for x%xar%.
-echo.
-echo ============================================================
-echo.
-if '%xar%' EQU '64' (set xar2=32) else (set xar2=64)
-PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=\"%xar%\"') | findstr /i "%xar%">nul && goto getAdmin
-PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=') | findstr /i "OfficeClientEdition">nul && goto configx642
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('^<Add','^<Add OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
-cls
-goto getAdmin
-:configx642
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('OfficeClientEdition=\"%xar2%\"','OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
-cls
-goto getAdmin
-
-:configx86
-cls
-echo.
-echo ============================================================
-echo.
-echo Rebuilding the configuration file for x%xar%.
-echo.
-echo ============================================================
-echo.
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt" && move /y "%configpath%\config.txt" "%configpath%\config.xml">nul
-cls
-goto getAdmin
 
 :nopowershell
 cls
@@ -174,7 +183,8 @@ echo.
 del /f /q "%temp%\setup.exe"
 timeout /t 2>nul
 cls
-goto makesetup
+
+:============================================================
 
 :makesetup
 cls
@@ -185,11 +195,11 @@ echo Building an authentic "setup.exe"
 echo.
 echo ============================================================
 echo.
-set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul && move /y "setup.exe" "%temp%\setup.exe">nul || goto nopowershell
+set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul && move /y "setup.exe" "%temp%\setup.exe">nul || goto :nopowershell
 set setuppath=%temp%
 timeout /t 2>nul
 cls
-goto start
+exit/b
 
 :bat2file: Compressed2TXT v6.1
 $k='.,;{-}[+](/)_|^=?O123456A789BCDEFGHYIeJKLMoN0PQRSTyUWXVZabcdfghijklmnpqrvstuwxz!@#$&~'; Add-Type -Ty @'
@@ -3278,5 +3288,3 @@ n=0;}} if (p>0) {for (int i=0;i<5-p;i++) {n += 84 * p85[p+i];} q=4; while (q > p
 ::Ea&E^{8LiY4#85/WJG(kl9@T~5AekPtniRL9^DPS)}AhI#U#Dix/98,Td94OOLC^q6&ZK7tf}w.xc?Y!D8PzxVD].qMT|Ht;(FPch{#-fdY~mSG?e8SiY0.w8qFGVw6CGz[,u=0CCpLR0N&v^TdV(3BZ~|XC4v^)Nakd6h|t(l^WGe-0.,d+#!9IPE|Uxk/tCE0}Rpk98AlJ-1(S03!R)PI-_SjUcUticf[sE$Or9c.no(O2G.JZ0J;u{eiMXNl8nNq$FxS2d_J}iOQr_P/msVZ|kj/-a]Owh+^EG8iH$gbm3$gZ#ONpP~Is1??ERe).#Q0~VAGf~JTHDmU{zU@1n,]EiWgbKLT[lljr[sakCXsTaIQ693pJ!K~Pm?!ovB2g-5L{ct@4h|)KNz/J;ou7fd&;014t+S?LReH&6=u}t+P&H?R^}3.HZY+Dwh;Y+y7/)ScQb|([KCQ_IQ9AoDg$DJ(;^B=36aUXQOr]Q;vmc;nB72Nm.!9dlOFOM@vLj[t-7RBQDm$cn?W~8,HkAkKhqyAM]6xSf30paOCbg8MuPISj1NAYTm/?.VYNyr9cYfh,4LZ$s7pIe/Ghg8HY#;CQNhPWO0u{L()VlG!]E,H_b,Ny(!QFk3O}PCjKR1h,SEo&BZUzkih33GWFI1+vStPzwgW&}27~rd8?O^cyNt-E.NmrynP88qT!KhPGRPxMb(K7+?.NZnUlu8jB4Oc&,uhdYO!Wpnu,-OTeNmf]eIpzT?UR=f5EbDmPD@XO]?uxj6mtUd_]dy?ciPiT70rLs3r4EwQ}hUEn|N-JQa7JuY-)Q2|~OP}f3NFjnCi|hh#&}yWWW$,8GH1}EOmQT{hzl/VFEAGn6wEk5ei1glwGu[}+fM!x]Dd0W!@f1a]0XElhanHz$x_Oar,aLM}Zo2iN@rq^a,;8u9/5PBXkZ,J4jr0APgBX-JJu&u@2;1fiI,oE+N9ABR!pfM.|VXno!L{tjphUS3VfJ7GUl{-)|}y+I?$-,-|L@{o$e^]hieo
 ::77$~&DT69a,T=]JMc]h0F1w.(Abtf&F^iLN1Wm@)U7hXSrz2Kjhe1kVz(/Nm9SYd$D=3vqjB7g?5gfa1D{d?|Ok$^V7j1KZNPgX7=P1xt6ku){U((cp8GID5bz8D|-Rg++9)A1h+|S$Lkq!Xi--^dZR)81YeJRM{lr,LCF_y.lffssjwir{TH7$71u;-95S{?&[zsN1.1btH6VeKc0n@5|V7rEsb{WJu.7];aLOZEX|PwOVfT@+shC?fCB|qKg9az~S4u[;#2ljU-J,04GCre#A.n6)2Jg;^BSH=@#}UTI6n#~Q.JOkVJ&G+$^BN/SOzmOX(zxp|69du_kqgi/[S|AftE|c4d7NuIMRWtfzO2fJm~,P;=Aoc-x6ds[fi_Jn=Zs^Ab.Eq.IqR87mDb/s$f=ndH,5O6Q#}]8|ZQ=BqT6xvE8kR4ag6.~)@Cp|Q]A@|=s.7v5zj)0E89a)!v^}f,IxWivF.p&-L_((qWd|{mXf/MsHX9VZQZCGw)0esqq(=cFxX4xSm)2iIsq!b@ZUg8]ZRwT-Y]n7Yz}VYtMcLJOkZ.Lvv(pY8Cq?q=5rs]LMIt4R=9lK8YC^+!iS+g5!^Qe_86oe;.m{vU4fnrLJz+q8VBLAtvX{A(vtF/EO4@7A+n=sL(+3Sg=/DrM((loaIsqLP(@,}o;N,=-kPPnxGff@fhja|DHei7}AscO25e}y-0Tb(;$R$dxd9KaOGlH=M]}jAUi4T]Qlt.]jZdab{di-1![Es[SXlCh(^eE[}jFf@[M8e&c0RtMFUi4-A#-j@S[BpFQ,[U1B^dgntie#C]~|Cz^D/DxthN3$MQ2}ejNmo4xpN7M_3S{jbaDN^J[9CZQpOJ[0y]WMrZnI[heZd4!5xH^M(?M8^uDHMPJf+]/kM5Cb@NPnlQ3/igB5b$Oqrl6OIgVU-zIK,Ay0[hpQeLKa7^9gz^3Z3
 :bat2file:]
-find "setup" setup.exe
-goto configend
