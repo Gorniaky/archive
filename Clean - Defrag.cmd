@@ -27,7 +27,6 @@ if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit /B
 :gotAdmin
 echo Start %time% %date%>>CleanDefrag.log
-del a.log
 if exist "%temp%\erasepaths.txt" (del "%temp%\erasepaths.txt")
 for %%a in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do if exist %%a:\ (set drivepath=%%a:&call:searchpath)
 if exist "%temp%\erasepaths.txt" call:erasepath
