@@ -12,13 +12,11 @@ exit/b
 :erase
 set noerase=
 for %%d in ($Recycle.Bin) do echo "%erasepath%"|%nul% findstr /i %%d && set noerase=1
-if not defined noerase (
-%nul% takeown /f "%erasepath%" /r /d N
+if not defined noerase (%nul% takeown /f "%erasepath%" /r /d N
 %nul% icacls "%erasepath%" /grant *S-1-1-0:F /t /c /q
 %nul% rd /s /q "%erasepath%"
 if exist "%erasepath%" (echo Fail to erase "%erasepath%") else (echo "%erasepath%" erased)
-)
-%nul% del /f /s /q "%erasepath%"\*.*
+) else (%nul% del /f /s /q "%erasepath%"\*.*)
 exit/b
 
 :setdrivelist
