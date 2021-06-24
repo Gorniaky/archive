@@ -1,12 +1,11 @@
 @echo off
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
-if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto gotAdmin)
+CD /D "%~dp0"
+>nul 2>nul reg query HKU\S-1-5-19 && goto gotAdmin || goto UACPrompt
 :UACPrompt
-echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
+(echo Set UAC = CreateObject^("Shell.Application"^)
+echo UAC.ShellExecute "%~s0", "", "", "runas", 1)>"%temp%\getadmin.vbs"
 "%temp%\getadmin.vbs"
 if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit /B
 :gotAdmin
-CD /D "%~dp0"
 cmd
