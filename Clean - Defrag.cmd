@@ -18,7 +18,7 @@ if exist "%1" (echo Fail to erase "%1") else (echo "%1" erased))
 exit/b
 
 :setdrivelist
-if defined drivelist (set drivelist=%drivelist% %1) else (set drivelist=%1)
+set drivelist=%drivelist% %1
 exit/b
 
 :start
