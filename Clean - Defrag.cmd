@@ -26,6 +26,7 @@ set drivelist=%drivelist%%drive%
 exit/b
 
 :start
+CD /D "%~dp0"
 set "nul=>nul 2>nul"
 %nul% reg query HKU\S-1-5-19 && goto gotAdmin || goto UACPrompt
 :UACPrompt
