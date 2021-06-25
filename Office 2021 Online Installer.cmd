@@ -1,5 +1,4 @@
-@echo off
-goto:start
+@echo off&goto:start
 
 :============================================================
 
@@ -9,7 +8,8 @@ setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447 VirusTotal 0/69 2021-06-
 
 :checkhashsetup
 if %setuppath%==. (exit/b)
-certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && exit/b || call:noauthenticsetup&exit/b
+certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && exit/b || call:noauthenticsetup
+exit/b
 
 :============================================================
 
@@ -78,18 +78,16 @@ if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit/b
 :gotAdmin
 title Office 2021 Online Installer
-(if exist "%ProgramFiles%\Microsoft Office\Office16" goto:installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office\Office16" goto:installed)
+if not defined programfiles(x86) (set xar=86) else (set xar=64)
 
 :config
 if not defined configpath (set configpath=.)
 if exist "%configpath%\config.xml" (call:configx%xar%) else (if exist "%temp%\config.xml" (set configpath=%temp%) else (call:noconfig))
 
 :setup
-if not defined programfiles(x86) (set xar=86) else (set xar=64)
 if not defined setuppath (set setuppath=.)
 if exist "%setuppath%\setup.exe" (call:checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&call:checkhashsetup) else (call:makesetup))
 
-cls
 echo.
 echo ============================================================
 echo.
