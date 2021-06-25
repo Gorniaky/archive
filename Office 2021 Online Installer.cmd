@@ -1,5 +1,5 @@
 @echo off
-goto :start
+goto:start
 
 :============================================================
 
@@ -9,12 +9,11 @@ setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447 VirusTotal 0/69 2021-06-
 
 :checkhashsetup
 if %setuppath%==. (exit/b)
-certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && exit/b || call :noauthenticsetup&exit/b
+certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && exit/b || call:noauthenticsetup&exit/b
 
 :============================================================
 
 :noconfig
-cls
 echo.
 echo ============================================================
 echo.
@@ -35,11 +34,9 @@ echo   ^<Display AcceptEULA^="TRUE" /^>
 echo ^</Configuration^>)> "%temp%\config.xml"
 set configpath=%temp%
 timeout /t 2>nul
-cls
 exit/b
 
 :configx64
-cls
 echo.
 echo ============================================================
 echo.
@@ -49,17 +46,14 @@ echo ============================================================
 echo.
 if '%xar%' EQU '64' (set xar2=32) else (set xar2=64)
 PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=\"%xar%\"') | findstr /i "%xar%">nul && exit/b
-PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=') | findstr /i "OfficeClientEdition">nul && goto :configx642
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=') | findstr /i "OfficeClientEdition">nul && goto:configx642
 PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('^<Add','^<Add OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
-cls
 exit/b
 :configx642
 PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('OfficeClientEdition=\"%xar2%\"','OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
-cls
 exit/b
 
 :configx86
-cls
 echo.
 echo ============================================================
 echo.
@@ -68,7 +62,6 @@ echo.
 echo ============================================================
 echo.
 PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt" && move /y "%configpath%\config.txt" "%configpath%\config.xml">nul
-cls
 exit/b
 
 :============================================================
@@ -76,27 +69,25 @@ exit/b
 :start
 cls
 CD /D "%~dp0"
->nul 2>nul reg query HKU\S-1-5-19 && goto :gotAdmin || goto :UACPrompt
-
+>nul 2>nul reg query HKU\S-1-5-19 && goto:gotAdmin || goto:UACPrompt
 :UACPrompt
 (echo Set UAC = CreateObject^("Shell.Application"^)
 echo UAC.ShellExecute "%~s0", "", "", "runas", 1)> "%temp%\getadmin.vbs"
 "%temp%\getadmin.vbs"
 if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit/b
-
 :gotAdmin
 title Office 2021 Online Installer
-(if exist "%ProgramFiles%\Microsoft Office" goto :installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office" goto :installed)
+(if exist "%ProgramFiles%\Microsoft Office\Office16" goto:installed)&(if exist "%ProgramFiles(x86)%\Microsoft Office\Office16" goto:installed)
 
 :config
 if not defined configpath (set configpath=.)
-if exist "%configpath%\config.xml" (call :configx%xar%) else (if exist "%temp%\config.xml" (set configpath=%temp%) else (call :noconfig))
+if exist "%configpath%\config.xml" (call:configx%xar%) else (if exist "%temp%\config.xml" (set configpath=%temp%) else (call:noconfig))
 
 :setup
 if not defined programfiles(x86) (set xar=86) else (set xar=64)
 if not defined setuppath (set setuppath=.)
-if exist "%setuppath%\setup.exe" (call :checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&call :checkhashsetup) else (call :makesetup))
+if exist "%setuppath%\setup.exe" (call:checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&call:checkhashsetup) else (call:makesetup))
 
 cls
 echo.
@@ -107,10 +98,8 @@ echo.
 echo ============================================================
 echo.
 %setuppath%\setup.exe /configure %configpath%\config.xml
-cls
 
 :installed
-cls
 echo.
 echo ============================================================
 echo.
@@ -118,13 +107,11 @@ echo Office already installed.
 echo.
 echo ============================================================
 echo.
-del /f /q "%temp%\setup.exe"
-del /f /q "%temp%\config.xml"
+>nul 2>nul (del /f /q "%temp%\setup.exe"
+del /f /q "%temp%\config.xml")
 timeout /t 2>nul
-cls
 
 :activate
-cls
 echo.
 echo ============================================================
 echo.
@@ -138,12 +125,12 @@ if %i%==1 set K_S=kms7.MSGuides.com
 if %i%==2 set K_S=kms8.MSGuides.com
 if %i%==3 set K_S=kms9.MSGuides.com
 if %i%==4 set K_S=kms.loli.beer
-if %i%==5 goto :notsupported
+if %i%==5 goto:notsupported
 cscript //nologo ospp.vbs /sethst:%K_S% >nul
 echo ============================================================
 echo.
 echo.
-cscript //nologo ospp.vbs /act | find /i "successful" && (echo.&echo ============================================================&echo.&echo #How it works: bit.ly/kms-server&echo ============================================================&goto :halt) || (echo The connection to KMS server failed! Trying to connect to another one... &echo Please wait... &echo. &echo. &set /a i+=1 &goto :server)
+cscript //nologo ospp.vbs /act | find /i "successful" && (echo.&echo ============================================================&echo.&echo #How it works: bit.ly/kms-server&echo ============================================================&goto:halt) || (echo The connection to KMS server failed! Trying to connect to another one... &echo Please wait... &echo. &echo. &set /a i+=1 &goto:server)
 :notsupported
 echo.
 echo ============================================================
@@ -171,7 +158,6 @@ pause>nul
 exit
 
 :noauthenticsetup
-cls
 echo.
 echo ============================================================
 echo.
@@ -179,14 +165,12 @@ echo The file "setup.exe" is not authentic.
 echo.
 echo ============================================================
 echo.
-del /f /q "%temp%\setup.exe"
+>nul 2>nul del /f /q "%temp%\setup.exe"
 timeout /t 2>nul
-cls
 
 :============================================================
 
 :makesetup
-cls
 echo.
 echo ============================================================
 echo.
@@ -194,10 +178,9 @@ echo Building an authentic "setup.exe"
 echo.
 echo ============================================================
 echo.
-set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul && move /y "setup.exe" "%temp%\setup.exe">nul || goto :nopowershell
+set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul && move /y "setup.exe" "%temp%\setup.exe">nul || goto:nopowershell
 set setuppath=%temp%
 timeout /t 2>nul
-cls
 exit/b
 
 :bat2file: Compressed2TXT v6.1
