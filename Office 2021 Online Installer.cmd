@@ -1,17 +1,17 @@
 @echo off&goto:start
 
-:============================================================
+::============================================================
 
 setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447 VirusTotal 0/69 2021-06-06 08:26:46 UTC
 
-:============================================================
+::============================================================
 
 :checkhashsetup
 if %setuppath%==. (exit/b)
 certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && exit/b || call:noauthenticsetup
 exit/b
 
-:============================================================
+::============================================================
 
 :noconfig
 echo.
@@ -33,7 +33,6 @@ echo   ^<RemoveMSI /^>
 echo   ^<Display AcceptEULA^="TRUE" /^>
 echo ^</Configuration^>)> "%temp%\config.xml"
 set configpath=%temp%
-timeout /t 2>nul
 exit/b
 
 :configx64
@@ -64,7 +63,23 @@ echo.
 PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt" && move /y "%configpath%\config.txt" "%configpath%\config.xml">nul
 exit/b
 
-:============================================================
+::============================================================
+
+:searchdir
+%nul% forfiles /m Office* /p %1 /c "cmd /c echo @path">>"%temp%\officedirs.txt"
+exit/b
+
+:officedir
+set "nul=>nul 2>nul"
+if exist "%temp%\officedirs.txt" (del "%temp%\officedirs.txt")
+set ospp=
+set osppdir=
+for %%a in ("%programfiles%\Microsoft Office" "%programfiles(x86)%\Microsoft Office") do if exist %%a (call:searchdir %%a)
+if exist "%temp%\officedirs.txt" (for /f delims^=^" %%b in (%temp%\officedirs.txt) do if exist "%%b\ospp.vbs" if not defined osppdir set osppdir="%%b"&set ospp="%%b\ospp.vbs")
+if exist "%temp%\officedirs.txt" (del "%temp%\officedirs.txt")
+exit/b
+
+::============================================================
 
 :start
 cls
@@ -79,6 +94,9 @@ exit/b
 :gotAdmin
 title Office 2021 Online Installer
 if not defined programfiles(x86) (set xar=86) else (set xar=64)
+
+call:officedir
+if defined osppdir goto:installed
 
 :config
 if not defined configpath (set configpath=.)
@@ -107,7 +125,6 @@ echo ============================================================
 echo.
 >nul 2>nul (del /f /q "%temp%\setup.exe"
 del /f /q "%temp%\config.xml")
-timeout /t 2>nul
 
 :activate
 echo.
@@ -117,7 +134,8 @@ echo Activating Office 2021
 echo.
 echo ============================================================
 echo.
-(if exist "%ProgramFiles%\Microsoft Office\Office16\ospp.vbs" cd /d "%ProgramFiles%\Microsoft Office\Office16")&(if exist "%ProgramFiles(x86)%\Microsoft Office\Office16\ospp.vbs" cd /d "%ProgramFiles(x86)%\Microsoft Office\Office16")&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&echo Activating your Office...&echo.&cscript //nologo slmgr.vbs /ckms >nul&cscript //nologo ospp.vbs /setprt:1688 >nul&cscript //nologo ospp.vbs /unpkey:PDPVF >nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF >nul&set i=1
+call:officedir
+(if exist %ospp% cd /d %osppdir%)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&echo Activating your Office...&echo.&cscript //nologo slmgr.vbs /ckms >nul&cscript //nologo ospp.vbs /setprt:1688 >nul&cscript //nologo ospp.vbs /unpkey:PDPVF >nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF >nul&set i=1
 :server
 if %i%==1 set K_S=kms7.MSGuides.com
 if %i%==2 set K_S=kms8.MSGuides.com
@@ -164,9 +182,8 @@ echo.
 echo ============================================================
 echo.
 >nul 2>nul del /f /q "%temp%\setup.exe"
-timeout /t 2>nul
 
-:============================================================
+::============================================================
 
 :makesetup
 echo.
@@ -178,7 +195,6 @@ echo ============================================================
 echo.
 set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul && move /y "setup.exe" "%temp%\setup.exe">nul || goto:nopowershell
 set setuppath=%temp%
-timeout /t 2>nul
 exit/b
 
 :bat2file: Compressed2TXT v6.1
