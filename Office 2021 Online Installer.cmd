@@ -8,7 +8,7 @@ setup.exe SHA1 9e41855c6d75fb00ddb19ba98b2d08f56932e447 VirusTotal 0/69 2021-06-
 
 :checkhashsetup
 if %setuppath%==. (exit/b)
-certutil -hashfile %setuppath%\setup.exe | findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul && exit/b || call:noauthenticsetup
+certutil -hashfile %setuppath%\setup.exe|findstr -x 9e41855c6d75fb00ddb19ba98b2d08f56932e447>nul||call:noauthenticsetup
 exit/b
 
 ::============================================================
@@ -31,8 +31,8 @@ echo      ^</Product^>
 echo   ^</Add^>
 echo   ^<RemoveMSI /^>
 echo   ^<Display AcceptEULA^="TRUE" /^>
-echo ^</Configuration^>)> "%temp%\config.xml"
-set configpath=%temp%
+echo ^</Configuration^>)>"%temp%\config.xml"
+set "configpath=%temp%"
 exit/b
 
 :configx64
@@ -44,12 +44,12 @@ echo.
 echo ============================================================
 echo.
 if '%xar%' EQU '64' (set xar2=32) else (set xar2=64)
-PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=\"%xar%\"') | findstr /i "%xar%">nul && exit/b
-PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=') | findstr /i "OfficeClientEdition">nul && goto:configx642
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('^<Add','^<Add OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=\"%xar%\"')|findstr /i "%xar%">nul&&exit/b
+PowerShell -Command (Select-String -Path "%configpath%\config.xml" -Pattern 'OfficeClientEdition=')|findstr /i "OfficeClientEdition">nul&&goto:configx642
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('^<Add','^<Add OfficeClientEdition=\"%xar%\"')>"%temp%\config.txt"&&move /y "%temp%\config.txt" "%configpath%\config.xml">nul
 exit/b
 :configx642
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('OfficeClientEdition=\"%xar2%\"','OfficeClientEdition=\"%xar%\"') > "%temp%\config.txt" && move /y "%temp%\config.txt" "%configpath%\config.xml">nul
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace('OfficeClientEdition=\"%xar2%\"','OfficeClientEdition=\"%xar%\"')>"%temp%\config.txt"&&move /y "%temp%\config.txt" "%configpath%\config.xml">nul
 exit/b
 
 :configx86
@@ -60,7 +60,7 @@ echo Rebuilding the configuration file for x%xar%.
 echo.
 echo ============================================================
 echo.
-PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','') > "%configpath%\config.txt" && move /y "%configpath%\config.txt" "%configpath%\config.xml">nul
+PowerShell -Command (Get-Content "%configpath%\config.xml").Replace(' OfficeClientEdition=\"64\"','')>"%configpath%\config.txt"&&move /y "%configpath%\config.txt" "%configpath%\config.xml">nul
 exit/b
 
 ::============================================================
@@ -69,14 +69,16 @@ exit/b
 %nul% forfiles /m Office* /p %1 /c "cmd /c echo @path">>"%temp%\officedirs.txt"
 exit/b
 
+:searchospp
+for /f delims^=^" %%b in (%temp%\officedirs.txt) do if exist "%%b\ospp.vbs" set "osppdir=%%b"&&set "ospp=%%b\ospp.vbs"
+exit/b
+
 :officedir
-set "nul=>nul 2>nul"
-if exist "%temp%\officedirs.txt" (del "%temp%\officedirs.txt")
 set ospp=
 set osppdir=
-for %%a in ("%programfiles%\Microsoft Office" "%programfiles(x86)%\Microsoft Office") do if exist %%a (call:searchdir %%a)
-if exist "%temp%\officedirs.txt" (for /f delims^=^" %%b in (%temp%\officedirs.txt) do if exist "%%b\ospp.vbs" if not defined osppdir set osppdir="%%b"&set ospp="%%b\ospp.vbs")
 if exist "%temp%\officedirs.txt" (del "%temp%\officedirs.txt")
+for %%a in ("%programfiles%\Microsoft Office" "%programfiles(x86)%\Microsoft Office") do if exist %%a (call:searchdir %%a)
+if exist "%temp%\officedirs.txt" (call:searchospp&del "%temp%\officedirs.txt")
 exit/b
 
 ::============================================================
@@ -84,10 +86,11 @@ exit/b
 :start
 cls
 CD /D "%~dp0"
->nul 2>nul reg query HKU\S-1-5-19 && goto:gotAdmin || goto:UACPrompt
+set "nul=>nul 2>nul"
+%nul% reg query HKU\S-1-5-19&&goto:gotAdmin||goto:UACPrompt
 :UACPrompt
 (echo Set UAC = CreateObject^("Shell.Application"^)
-echo UAC.ShellExecute "%~s0", "", "", "runas", 1)> "%temp%\getadmin.vbs"
+echo UAC.ShellExecute "%~s0", "", "", "runas", 1)>"%temp%\getadmin.vbs"
 "%temp%\getadmin.vbs"
 if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit/b
@@ -96,15 +99,15 @@ title Office 2021 Online Installer
 if not defined programfiles(x86) (set xar=86) else (set xar=64)
 
 call:officedir
-if defined osppdir goto:installed
+if defined ospp goto:installed
 
 :config
 if not defined configpath (set configpath=.)
-if exist "%configpath%\config.xml" (call:configx%xar%) else (if exist "%temp%\config.xml" (set configpath=%temp%) else (call:noconfig))
+if exist "%configpath%\config.xml" (call:configx%xar%) else (if exist "%temp%\config.xml" (set "configpath=%temp%") else (call:noconfig))
 
 :setup
 if not defined setuppath (set setuppath=.)
-if exist "%setuppath%\setup.exe" (call:checkhashsetup) else (if exist %temp%\setup.exe (set setuppath=%temp%&call:checkhashsetup) else (call:makesetup))
+if exist "%setuppath%\setup.exe" (call:checkhashsetup) else (if exist "%temp%\setup.exe" (set "setuppath=%temp%"&call:checkhashsetup) else (call:makesetup))
 
 echo.
 echo ============================================================
@@ -123,7 +126,7 @@ echo Office already installed.
 echo.
 echo ============================================================
 echo.
->nul 2>nul (del /f /q "%temp%\setup.exe"
+%nul% (del /f /q "%temp%\setup.exe"
 del /f /q "%temp%\config.xml")
 
 :activate
@@ -135,18 +138,18 @@ echo.
 echo ============================================================
 echo.
 call:officedir
-(if exist %ospp% cd /d %osppdir%)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x" >nul)&echo Activating your Office...&echo.&cscript //nologo slmgr.vbs /ckms >nul&cscript //nologo ospp.vbs /setprt:1688 >nul&cscript //nologo ospp.vbs /unpkey:PDPVF >nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF >nul&set i=1
+(if exist %ospp% cd /d %osppdir%)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x">nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x">nul)&echo Activating your Office...&echo.&cscript //nologo slmgr.vbs /ckms>nul&cscript //nologo ospp.vbs /setprt:1688>nul&cscript //nologo ospp.vbs /unpkey:PDPVF>nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF>nul&set i=1
 :server
 if %i%==1 set K_S=kms7.MSGuides.com
 if %i%==2 set K_S=kms8.MSGuides.com
 if %i%==3 set K_S=kms9.MSGuides.com
 if %i%==4 set K_S=kms.loli.beer
 if %i%==5 goto:notsupported
-cscript //nologo ospp.vbs /sethst:%K_S% >nul
+cscript //nologo ospp.vbs /sethst:%K_S%>nul
 echo ============================================================
 echo.
 echo.
-cscript //nologo ospp.vbs /act | find /i "successful" && (echo.&echo ============================================================&echo.&echo #How it works: bit.ly/kms-server&echo ============================================================&goto:halt) || (echo The connection to KMS server failed! Trying to connect to another one... &echo Please wait... &echo. &echo. &set /a i+=1 &goto:server)
+cscript //nologo ospp.vbs /act|find /i "successful"&&(echo.&echo ============================================================&echo.&echo #How it works: bit.ly/kms-server&echo ============================================================&goto:halt)||(echo The connection to KMS server failed! Trying to connect to another one... &echo Please wait... &echo. &echo. &set /a i+=1 &goto:server)
 :notsupported
 echo.
 echo ============================================================
@@ -154,8 +157,13 @@ echo Sorry! Your version is not supported.
 echo Please try installing the latest version here: bit.ly/aiomsp
 echo ============================================================
 :halt
-pause >nul
+pause>nul
 exit
+
+::============================================================
+
+:powershell
+%nul% PowerShell -command dir %systemdrive%&&exit/b
 
 :nopowershell
 cls
@@ -167,11 +175,15 @@ echo.
 echo ============================================================
 echo.
 
+::============================================================
+
 :setupend
 echo:
 echo Press any key to exit...
 pause>nul
 exit
+
+::============================================================
 
 :noauthenticsetup
 echo.
@@ -181,11 +193,12 @@ echo The file "setup.exe" is not authentic.
 echo.
 echo ============================================================
 echo.
->nul 2>nul del /f /q "%temp%\setup.exe"
+%nul% del /f /q "%temp%\setup.exe"
 
 ::============================================================
 
 :makesetup
+call:powershell
 echo.
 echo ============================================================
 echo.
@@ -193,11 +206,11 @@ echo Building an authentic "setup.exe"
 echo.
 echo ============================================================
 echo.
-set "0=%~f0" & powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2file\:.*';iex($f[1]); X 1>nul && move /y "setup.exe" "%temp%\setup.exe">nul || goto:nopowershell
+set "0=%~s0"&powershell -nop -c $f=[IO.File]::ReadAllText($env:0)-split':bat2filesetupexe\:.*';iex($f[1]); X 1>nul&&move /y "setup.exe" "%temp%\setup.exe">nul
 set setuppath=%temp%
 exit/b
 
-:bat2file: Compressed2TXT v6.1
+:bat2filesetupexe: Compressed2TXT v6.1
 $k='.,;{-}[+](/)_|^=?O123456A789BCDEFGHYIeJKLMoN0PQRSTyUWXVZabcdfghijklmnpqrvstuwxz!@#$&~'; Add-Type -Ty @'
 using System.IO; public class BAT85 {public static void Dec (ref string[] f, int x, string fo, string key) { unchecked {
 byte[] b85=new byte[256];long n=0;int p=0,q=0,c=255,z=f[x].Length; while (c>0) b85[c--]=85; while (c<85) b85[key[c]]=(byte)c++;
@@ -206,7 +219,7 @@ c=b85[f[x][i]]; if (c==85) continue; n += c * p85[p++]; if (p==5) {p=0; q=4; whi
 n=0;}} if (p>0) {for (int i=0;i<5-p;i++) {n += 84 * p85[p+i];} q=4; while (q > p-1) {q--;o.WriteByte((byte)(n>>8*q));} } } }}}
 '@; cd -lit (Split-Path $env:0); function X([int]$x=1) {[BAT85]::Dec([ref]$f,$x+1,$x,$k); expand -R $x -F:* .; del $x -force}
 
-:bat2file:[ setup_exe
+:bat2filesetupexe:[ setup_exe
 ::AveYo.....K3x51.....^_;a0......$}I}.99(,Uia6!5o9Yqi#KOX3V#UV.......-TMotrnOe+oKAI-agKFK5N[#rbR9.|d7+M8w}?x3pyv)-B@7..{B(fH,_lYoy$Vk(E;1G&7UWybdtCg#uG.nxSh_|=?TOe$|kFf1Q{;syq+1{2--o,Adl?8O9XkFQVx3Cm~}9;4c8-E7l~vZ=MF+)Ia3P4PK;.#R-?iS-|W=7+)E#7EgXIif@(RQm,$G[tkvoVqW5x^uyhpny#Y54DUACwTq.I^SCdx8Di0Fw}28@5(a64p=aLlWYa7x--!m_;BaW^YeSEUP]I|m[tf$]F3m.O.{$gCt0)zW3F=hDND}QBGR/6b.1EAY!Q?xeyelN1D(9,{g,ff-x{AFS6y=8(RDHW]q+!U/0~~CGXGpu5]5GPA-JE)e,WyB!;t?;IB{Tsi3,N=#Di5+qhBp.(3gKm6l&,VS{o3_}xl2m&4YfQJ|_=PYxL3u;E&fUNDW1~(bFBTU@W7oV@Uv0Mt9r1)zXR?IoC[lhnHbRUWJ{)Uzo.n7@W^)jV3I}deC|py!a)Cy9[3!cLM(Z^6H0QL@y+;qg9JZ5f(#av@m+B5U#i{CMo}#;]{dSk#SM-{E2lS}h[yBGp=8/R=7@ztW.QteZxgH@Kf0,|k)j_1]w|VLLR1zLE+$xF#GXNtDeSCyCbD^=$[;}vuw3rRxN8q~mf@+ec}z{XMP&c)jA(Ra|~aVD0hZS/h4nLd7z!IvHI&OPeUAE/Lvr}1w^MG0NQol1T_5}CS(,]!d{;Mh)|aR2qOEOtEUxMB?8a$WC7le/,I[PD_kVt=d+~g2q.YVo/6sYAi?~U^#&9x$xyP=y7/i~Me0,Jpq/zX_HzRG^g(OKLb3|+;SjmJat])@Tk_HnsUAv_ouIK(Hzty|K$,YZ?=7H!.o}qE[L)s2fV=Gnbt{Nk?G}[b3)n0wBH$k2|+Om0Jcg7lRt~GEs!.3Eti9rRtkh!5O3ElxWjF}I&/lO506Cu1L
 ::|HJAmM&n&q^#71^9Y704^K@2&8v$z(+2Pmht$D1EzvaAi,rARh,!we028/#yq1D5BppJih8(BpB6Syt5HyLrGk1TXUPo[XN])5(Fxc+Np{KU;F+&zUo)geQ-aZWNu5ull2PN4,p?J8ki_sZNMa+m6d;}|;sx@R33RVKGNwT;NSpv5-mq6{hP[1?-1e}w?X|=yCi.P[V0cXlT?3vzR=M5RsgUan]-2!nqpaiv)N9oA~,h0T8OFC?YIV=(8_^+&U^9v^,/Rl{=vHzR,hdpAx018g,Yg|QP6Q!/~34f)z;Gj#6wA#L}fhaB&Uhy(?W6$Bxb4RzG,ucG$!meZDi^~a2lqu_&$fJwXoWBD)DAS{~|t]+{l]DY~S4&6HY]I7t)#d-ncV_,llW+t3lr&W]JTgYVO|XCZ#H4OhU}wX.v38tA4E_hp+}OCqa#NXLzSv@u[y7BKtpF#1yBbur^Mc|8F(_2NxxtMk[EVVnNU0FObbDgTNF4[&ku@4;a0M~vTvm?hi)oF=HLO!SvRkyNS1YcEP#?5}eS0dh_PYnk#ht#7GVr~_^Xv1XauJHY?(]ZSZ=a2()9CySw2xhL;zg#-}ATd1OyS1WQ^y6g^Jbe/;r4,QjYN5Zf8_XD~9iSQ@6wmKU{h)q!u64zZ[A5Kg;&fyDAW-KIT?Ij|!},vC+nSQQtUE]ltEO,vU3i7D4|(||gCs|cYR64V+2aV[YIp8jTny)ue7$p?.xZexL(xxST1g}s_/pPBDDqx9_?SFoWwVM&R@$9tUYAqKp##Y$_]cf(olMI63_~XRY-k!T8q0Fj{}WOQ;mgM|^tZU~Z^(_ZtSa.aEW,y8Dh(8kLllK8ir/_1n3Z$7x#7ZW0)YOfWSOk$^EPdwCLvsAu-29,U8dTqNscE8@]z#KTcYP7bK9[(U=1o[2cEk8S(+ljR=@mA_$p,OUS3Er2sHe|uHR@EtMWGyZASXk=G&jQ_^kh6ZP=}{^_K6Q-Lf#h8EA,ne6X$]wh-,v{|nJ?X-=V#mi)M,BFf4w
 ::;M!3wC4cw#ZGA,|zKBJ6(69qn44I,hhJ+62?(lBo_!k)3nR{pH=084FP|@&{3I7zF?l1)Tr?&^RY_V=;R9RDF3go]sNdwN94?K=oxjOq(od07{[6bLyeQR+_J9LbnfZjdTzc2J}sf1oiphN)JaF9S)A_~/hhMEG/T)IPQX8+eZMdA/H,05E,ZXI-vHhfWX10CLs0?jD)v9R3!_pHc;Ifbg^+3S{lrktcjQ/ov!,f[q5B4L,3U9G/.CIOq{Sfcs4ts@5Yz(-]RN$}Dvg[^6IvWk9,[S-d5#|LTm}obDm^N1=]0+Bv1(TL!,Q/L7&dyt|FOFClYkz{c^z^Kf@Yzlku}=wek[DRt}mTE,S6-6]1#VYx{Ajdrrq&LSlc@L-=iGFWl7;gu_]&q-I)-Q7.9tIOg-A?a{LIkM89uL0@Yk.Jn5.HF]Z|7afzA4Ojv^I+2Kjq],#RtvZ]?BWHq6+?C06lH#t3P^QNc)IgHU-lA;Yox;#vcu[JKJlGkYse}1~{H40IQIqlgpszLeKUF7lS}Qn2=qT1gfbs}rLDN5JXZ,w;1I8hxgzC{YmAFM-key{p};lw@]@n?cGKgQoPm97jd$mgvAf;vlMwj})=[BU!A#G)GV=wi!pQEQbe+hcM5jl-SmLCL+Ks!7yX{P;CAPy6{]D^3jgzKs(wEpfYo@fU=$z]QJZjJMmZ-$c21~GN51?TUDL+A)a+OT(,-#[yq;Cbs8j8x]aeH92#g9yk=;)=y=JYxgRP3z(^sirS?~NMvZG1^vp2fkw3df;m|Q8qfp}(N,P_4pfRBdwoZs]X!cM[x;b.K0y)0,-2vsCZou@hrN@loMK0Am=Wz_u77^s!!k,!^OkPi3lDH;P]K,Wf1IQsw18[{7a1}BF(Yq68jV-K;a[V.;&+yH|e!{]T,AAUYKPT5hU@88TnWe{3Jq=-!MQFkDoFdk;n{ExHx)j@/[ZAA]o=ITZt]3l2W{7K+@tP-@j0YdDSyun8J8O#PPLh]t~?IM(RT]V[qIh0I?=YID4
@@ -3283,4 +3296,4 @@ n=0;}} if (p>0) {for (int i=0;i<5-p;i++) {n += 84 * p85[p+i];} q=4; while (q > p
 ::,|ceZ@.0ffa~)i1iAb.~VS.{uCeV{EbY$cS(@lq9;_zx6cw-]/BY]XTC_?W8pNBuYC4K1uT9!oQ;F69|CWOi.04A).u/oykLv$P(5[vJ!G@0nPtd3F)GJ2EN/8m~W^p[FVi7R7]On17byk69EU1cKmJOHQJMT$H7Y$AG[ptBz2LXc(}Y,{}t|nRh}shF+5re/irVQ0RQvS[XnrNs!ye~xL2t5}V,4[!oyPAS&qf,1Z^ev,=;X5;QBzMAy^L#A.1Gq;O+M}X.8E?lD^muH|/m}c}Ad=Co(NE3h?rZ!O#Gtzql,7Y--m{Wc5Dnk_E93HdgLEeb;UYA9@eA3~48icel70g.w.GTz&3I3_hl.]7&M?{nUfebOKjh^C9}GzZftpCsYlA+E8#dyI/w4J,dA#LD]}}YA(=oEc_?u[Vwd]$^n8tPU5MdR_t/i266HAPuQ{)XaA=dd,}_Wmr]mFJ;W_|Z9a@~lCKAC|M@mWh6C?Tea+IAC]#b,AY2Og~S,=nJTPw30fWk)F}]lMe6TQ.$b2YEAB7ukv0+(7^UG^&x(L#1!^,Ph0R(OG31+L,!J^NpPBs!hiCKVNtim5?)XC-)Alfh#Yx^]]=6@7RT~Z(!BoS/gNLlp?3+BDp33ZG4.Jhe7s!j6!Z[r-hqV,r|@e?NyMob^XsPW.e;~}3.S!~Jx8B]?xX4.UamSdrK7ofi,;O4VOYt])xYQZOen-StYJf&}jk0k^&Q6eg$MaF;(#c!xI1DNFiofGW-Kj/_-X~W0.n$bEb4LtT}yIh)f7JIzb;KSZr^!^QXlnsg5wqfgmxKem|_)aE7c97Bjp;6n9l#wc}^MtbCg=x3LG}S9^2};{?}C2kBqNA9]~7?D[D92a~skCN$l2L(Vz2iDP22F0d[,2MFmA{)Jmdk[=_?!7i{~Dl~5CqiZ/P!=vE[!vzf9u|H/ck=ve9Ae;K;#D+0(LX8K(xgIJXQY?aF-9!b(zHktU5+.0|+T~wG=HS[r_.,DVdGsG98=Mxv|EG(5tXJvl6
 ::Ea&E^{8LiY4#85/WJG(kl9@T~5AekPtniRL9^DPS)}AhI#U#Dix/98,Td94OOLC^q6&ZK7tf}w.xc?Y!D8PzxVD].qMT|Ht;(FPch{#-fdY~mSG?e8SiY0.w8qFGVw6CGz[,u=0CCpLR0N&v^TdV(3BZ~|XC4v^)Nakd6h|t(l^WGe-0.,d+#!9IPE|Uxk/tCE0}Rpk98AlJ-1(S03!R)PI-_SjUcUticf[sE$Or9c.no(O2G.JZ0J;u{eiMXNl8nNq$FxS2d_J}iOQr_P/msVZ|kj/-a]Owh+^EG8iH$gbm3$gZ#ONpP~Is1??ERe).#Q0~VAGf~JTHDmU{zU@1n,]EiWgbKLT[lljr[sakCXsTaIQ693pJ!K~Pm?!ovB2g-5L{ct@4h|)KNz/J;ou7fd&;014t+S?LReH&6=u}t+P&H?R^}3.HZY+Dwh;Y+y7/)ScQb|([KCQ_IQ9AoDg$DJ(;^B=36aUXQOr]Q;vmc;nB72Nm.!9dlOFOM@vLj[t-7RBQDm$cn?W~8,HkAkKhqyAM]6xSf30paOCbg8MuPISj1NAYTm/?.VYNyr9cYfh,4LZ$s7pIe/Ghg8HY#;CQNhPWO0u{L()VlG!]E,H_b,Ny(!QFk3O}PCjKR1h,SEo&BZUzkih33GWFI1+vStPzwgW&}27~rd8?O^cyNt-E.NmrynP88qT!KhPGRPxMb(K7+?.NZnUlu8jB4Oc&,uhdYO!Wpnu,-OTeNmf]eIpzT?UR=f5EbDmPD@XO]?uxj6mtUd_]dy?ciPiT70rLs3r4EwQ}hUEn|N-JQa7JuY-)Q2|~OP}f3NFjnCi|hh#&}yWWW$,8GH1}EOmQT{hzl/VFEAGn6wEk5ei1glwGu[}+fM!x]Dd0W!@f1a]0XElhanHz$x_Oar,aLM}Zo2iN@rq^a,;8u9/5PBXkZ,J4jr0APgBX-JJu&u@2;1fiI,oE+N9ABR!pfM.|VXno!L{tjphUS3VfJ7GUl{-)|}y+I?$-,-|L@{o$e^]hieo
 ::77$~&DT69a,T=]JMc]h0F1w.(Abtf&F^iLN1Wm@)U7hXSrz2Kjhe1kVz(/Nm9SYd$D=3vqjB7g?5gfa1D{d?|Ok$^V7j1KZNPgX7=P1xt6ku){U((cp8GID5bz8D|-Rg++9)A1h+|S$Lkq!Xi--^dZR)81YeJRM{lr,LCF_y.lffssjwir{TH7$71u;-95S{?&[zsN1.1btH6VeKc0n@5|V7rEsb{WJu.7];aLOZEX|PwOVfT@+shC?fCB|qKg9az~S4u[;#2ljU-J,04GCre#A.n6)2Jg;^BSH=@#}UTI6n#~Q.JOkVJ&G+$^BN/SOzmOX(zxp|69du_kqgi/[S|AftE|c4d7NuIMRWtfzO2fJm~,P;=Aoc-x6ds[fi_Jn=Zs^Ab.Eq.IqR87mDb/s$f=ndH,5O6Q#}]8|ZQ=BqT6xvE8kR4ag6.~)@Cp|Q]A@|=s.7v5zj)0E89a)!v^}f,IxWivF.p&-L_((qWd|{mXf/MsHX9VZQZCGw)0esqq(=cFxX4xSm)2iIsq!b@ZUg8]ZRwT-Y]n7Yz}VYtMcLJOkZ.Lvv(pY8Cq?q=5rs]LMIt4R=9lK8YC^+!iS+g5!^Qe_86oe;.m{vU4fnrLJz+q8VBLAtvX{A(vtF/EO4@7A+n=sL(+3Sg=/DrM((loaIsqLP(@,}o;N,=-kPPnxGff@fhja|DHei7}AscO25e}y-0Tb(;$R$dxd9KaOGlH=M]}jAUi4T]Qlt.]jZdab{di-1![Es[SXlCh(^eE[}jFf@[M8e&c0RtMFUi4-A#-j@S[BpFQ,[U1B^dgntie#C]~|Cz^D/DxthN3$MQ2}ejNmo4xpN7M_3S{jbaDN^J[9CZQpOJ[0y]WMrZnI[heZd4!5xH^M(?M8^uDHMPJf+]/kM5Cb@NPnlQ3/igB5b$Oqrl6OIgVU-zIK,Ay0[hpQeLKa7^9gz^3Z3
-:bat2file:]
+:bat2filesetupexe:]
