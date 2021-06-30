@@ -138,7 +138,7 @@ echo.
 echo ============================================================
 echo.
 call:officedir
-(if exist %ospp% cd /d %osppdir%)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x">nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x">nul)&echo Activating your Office...&echo.&cscript //nologo slmgr.vbs /ckms>nul&cscript //nologo ospp.vbs /setprt:1688>nul&cscript //nologo ospp.vbs /unpkey:PDPVF>nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF>nul&set i=1
+(if exist "%ospp%" cd /d "%osppdir%")&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x">nul)&(for /f %%x in ('dir /b ..\root\Licenses16\ProPlus2021PreviewVL*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%%x">nul)&echo Activating your Office...&echo.&cscript //nologo slmgr.vbs /ckms>nul&cscript //nologo ospp.vbs /setprt:1688>nul&cscript //nologo ospp.vbs /unpkey:PDPVF>nul&cscript //nologo ospp.vbs /inpkey:HFPBN-RYGG8-HQWCW-26CH6-PDPVF>nul&set i=1
 :server
 if %i%==1 set K_S=kms7.MSGuides.com
 if %i%==2 set K_S=kms8.MSGuides.com
