@@ -22,9 +22,8 @@ set drivelist=%drivelist% %1
 exit/b
 
 :start
-CD /D "%~dp0"
 set "nul=>nul 2>nul"
-%nul% reg query HKU\S-1-5-19 && goto:gotAdmin || goto:UACPrompt
+%nul% reg query HKU\S-1-5-19 && goto:gotAdmin||goto:UACPrompt
 :UACPrompt
 (echo Set UAC = CreateObject^("Shell.Application"^)
 echo UAC.ShellExecute "%~s0", "", "", "runas", 1)> "%temp%\getadmin.vbs"
@@ -32,7 +31,7 @@ echo UAC.ShellExecute "%~s0", "", "", "runas", 1)> "%temp%\getadmin.vbs"
 if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit /B
 :gotAdmin
-echo Start %time% %date%>>CleanDefrag.log
+echo Start %time% %date%>>"%~dp0\CleanDefrag.log"
 for %%a in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do if exist %%a:\ (call:setdrivelist %%a)
 if exist "%temp%\erasepaths.txt" (del "%temp%\erasepaths.txt")
 for %%a in (%drivelist%) do if exist %%a:\ (call:searchpath %%a:)
@@ -44,7 +43,7 @@ if exist "%temp%\erasepaths.txt" call:erasepath
 "%programdata%\temp"
 "%appdata%\Adobe\Common\Media Cache Files"
 "%localappdata%\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\TempState\WinGet") do if exist %%a (forfiles /p %%a /c "cmd /c if @isdir==TRUE (rd /s /q @file) else (del /f /s /q @file)"))
-echo Clean %time% %date%>>CleanDefrag.log
+echo Clean %time% %date%>>"%~dp0\CleanDefrag.log"
 
 for %%a in (%drivelist%) do if exist %%a:\ (cls&defrag %%a:)
-echo Finish defrag %time% %date%>>CleanDefrag.log
+echo Finish defrag %time% %date%>>"%~dp0\CleanDefrag.log"
