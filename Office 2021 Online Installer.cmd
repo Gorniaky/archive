@@ -84,8 +84,6 @@ exit/b
 ::============================================================
 
 :start
-cls
-CD /D "%~dp0"
 set "nul=>nul 2>nul"
 %nul% reg query HKU\S-1-5-19&&goto:gotAdmin||goto:UACPrompt
 :UACPrompt
@@ -95,6 +93,7 @@ echo UAC.ShellExecute "%~s0", "", "", "runas", 1)>"%temp%\getadmin.vbs"
 if exist "%temp%\getadmin.vbs" (del "%temp%\getadmin.vbs")
 exit/b
 :gotAdmin
+CD /D "%~dp0"
 title Office 2021 Online Installer
 if not defined programfiles(x86) (set xar=86) else (set xar=64)
 
