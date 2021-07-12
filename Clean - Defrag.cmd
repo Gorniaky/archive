@@ -44,6 +44,6 @@ if exist "%temp%\erasepaths.txt" call:erasepath
 "%appdata%\Adobe\Common\Media Cache Files"
 "%localappdata%\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\TempState\WinGet") do if exist %%a (forfiles /p %%a /c "cmd /c if @isdir==TRUE (rd /s /q @file) else (del /f /s /q @file)"))
 echo Clean %time% %date%>>"%~dp0\CleanDefrag.log"
-
-for %%a in (%drivelist%) do if exist %%a:\ (cls&defrag %%a:)
+cls
+for %%a in (%drivelist%) do if exist %%a:\ (defrag %%a:)
 echo Finish defrag %time% %date%>>"%~dp0\CleanDefrag.log"
